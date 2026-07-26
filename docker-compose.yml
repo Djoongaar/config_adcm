@@ -7,7 +7,7 @@ networks:
 
 services:
   adcm:
-    image: "hub.arenadata.io/adcm/adcm:latest"
+    image: "hub.arenadata.io/adcm/adcm:2.12.0"
     ports:
       - "80:8000"
     volumes:
@@ -27,7 +27,7 @@ services:
       arenadata: { aliases: [ adcm ] }
 
   postgres:
-    image: postgres:16.14
+    image: "postgres:16.14"
     environment:
       POSTGRES_PASSWORD: Ws3iysiw
       PGDATA: /var/lib/postgresql/data/16
