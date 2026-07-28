@@ -15,22 +15,21 @@
 
 ### Шаг 4. Создать виртуальные машины в ВК Клауд
 В конкретно моем примере я создал 5 виртуальных машин:
-| Название экземпляра | IPv4   | Flavor   | OS       |
-| ----------- | ------ | -------- | -------- |
-| dwh-adb-control | 10.0.0.241 | STD3-2-8 | Ubuntu 22.04 |
-| dwh-adb-master  | 10.0.0.251 | STD3-1-2 | Ubuntu 22.04 |
-| dwh-adb-standby | 10.0.0.250 | STD3-1-2 | Ubuntu 22.04 |
-| dwh-adb-segment1| 10.0.0.73  | STD3-2-8 | Ubuntu 22.04 |
-| dwh-adb-segment2| 10.0.0.249 | STD3-2-8 | Ubuntu 22.04 |
+| Название экземпляра | IPv4       | Flavor   | Disk Space | OS           |
+| ------------------- | ---------- | -------- | ---------- |------------- |
+| dwh-adb-master      | 10.0.0.251 | STD3-1-2 | 60 GB      | Ubuntu 22.04 |
+| dwh-adb-standby     | 10.0.0.250 | STD3-1-2 | 60 GB      | Ubuntu 22.04 |
+| dwh-adb-segment1    | 10.0.0.73  | STD3-2-8 | 100 GB     | Ubuntu 22.04 |
+| dwh-adb-segment2    | 10.0.0.249 | STD3-2-8 | 100 GB     | Ubuntu 22.04 |
 Все они располагаются в одной подсети `arenadata_network` с выключенной функцией Private DNS.
 
 ### Шаг 5. Создать хосты для будущего развертывания `ADB`
-* Создать и настроить хостпровайдера по [инструкции](https://docs.arenadata.io/ru/hp-ssh/current/get-started/install.html#%D1%88%D0%B0%D0%B3-3-%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D1%85%D0%BE%D1%81%D1%82%D0%BF%D1%80%D0%BE%D0%B2%D0%B0%D0%B9%D0%B4%D0%B5%D1%80%D0%B0-%D0%BD%D0%B0-%D0%B1%D0%B0%D0%B7%D0%B5-%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B6%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE-%D0%B1%D0%B0%D0%BD%D0%B4%D0%BB%D0%B0). Про то что такое `hostprovider` и для чего он нужен можно прочитать [здесь](https://docs.arenadata.io/ru/ADB/6.27.1.61/get-started/online-install/hostprovider/index.html)
+* Создать и настроить хостпровайдера по [инструкции](https://docs.arenadata.io/ru/hp-ssh/current/get-started/install.html#%D1%88%D0%B0%D0%B3-3-%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D1%85%D0%BE%D1%81%D1%82%D0%BF%D1%80%D0%BE%D0%B2%D0%B0%D0%B9%D0%B4%D0%B5%D1%80%D0%B0-%D0%BD%D0%B0-%D0%B1%D0%B0%D0%B7%D0%B5-%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B6%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE-%D0%B1%D0%B0%D0%BD%D0%B4%D0%BB%D0%B0). Про то что такое `hostprovider` и для чего он нужен можно прочитать [здесь](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/hostprovider/index.html)
 * Создать и настроить хосты (по одному) согласно [инструкции](https://docs.arenadata.io/ru/hp-ssh/current/how-to/create-hosts.html). потребуется заполнить имя пользователя, ipv4 адрес и приватный ключ для SSH подключения. После настройки рекомендуется проверить подключение запустив джобу `Check connection` и/или `Install statuschecker`
 
 ### Шаг 6. Создать и настроить кластер `ADB`
-* Создайте кластер воспользовавшесь этой [инструкцией](https://docs.arenadata.io/ru/ADB/6.27.1.61/get-started/online-install/adb-install/cluster-creation.html)
-* Во вкладке `Services` добавьте в кластер два сервиса: `ADB` и `ADB Control`
+* Создайте кластер воспользовавшесь этой [инструкцией](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adb-install/cluster-creation.html)
+* Во вкладке `Services` добавьте в кластер сервис `ADB`
 * Во вкладке `Hosts` добавьте созданные на предыдущем шаге хосты
 * Во вкладке `Mappings` сопоставьте хосты по их ролям в кластере
 
@@ -82,6 +81,5 @@ stat -fc %T /sys/fs/cgroup/
 * Сохраните изменения
 
 ### Шаг 10. Установка кластера
-* Сначала выполните `Precheck` - этот шаг выполняется успешно
-* Затем запустите `Install` - установка падает с ошибкой
-
+* Сначала выполните `Precheck`
+* Затем запустите `Install`
