@@ -1,17 +1,6 @@
-# Установка и настройка кластера Arenadata DB
-### Шаг 1. Установка ADCM (Arenadata cluster manager)
-Установка ADCM выполняется по [документации](https://docs.arenadata.io/ru/ADB/current/introduction/intro.html). Наиболее удобный способ - установка в контейнерах докер. Этот репозиторий содержит `docker-compose.yml` с уже настроенным `adcm` и `postgres` для хранения данных. Для развертывания `adcm` просто склонируйте репозиторий и выполните команду `docker compose up -d`
 
-### Шаг 2. Вход и настройка adcm
-* Для запуска после установки воспользуйтесь [инструкцией](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#%D1%88%D0%B0%D0%B3-3-%D0%B7%D0%B0%D0%BF%D1%83%D1%81%D0%BA-adcm). В отличие от инструкции вместо 8000 используется порт: 80. 
-* Для входа используйте логин: `admin` и пароль: `admin`. Далее смените пароль как описано в [тут](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#%D0%BF%D1%80%D0%BE%D0%B2%D0%B5%D1%80%D0%BA%D0%B0-web-%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81%D0%B0-adcm)
-* Вручную установите URL ADCM как описато в [инструкции](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#adcm-url)
 
-### Шаг 3. Загрузить bundles
-* Для установки продуктов Arenadata нам постребуется два бандла: SSH Hostprovider и ADB Cluster.
-* Arenadata DB bundles можно скачать на [тут](https://network.arenadata.io/arenadata-db)
-* SSH bundles можно скачать на [тут](https://network.arenadata.io/arenadata-cluster-manager/bundles)
-* Бандл для установки Arenadata Cluster по этой [ссылке](https://network.arenadata.io/arenadata-db/downloads#7.4.1_arenadata1_b1)
+
 
 ### Шаг 4. Создать виртуальные машины в ВК Клауд
 В конкретно моем примере я создал 5 виртуальных машин:
@@ -64,7 +53,7 @@ sudo -i
 nano /etc/default/grub.d/99-cgroup.cfg
 
 # Edit file
-# GRUB_CMDLINE_LINUX_DEFAULT="systemd.unified_cgroup_hierarchy=0 systemd.legacy_systemd_cgroup_controller=1"
+GRUB_CMDLINE_LINUX_DEFAULT="systemd.unified_cgroup_hierarchy=0 systemd.legacy_systemd_cgroup_controller=1"
 
 # Update cgroup
 update-grub
