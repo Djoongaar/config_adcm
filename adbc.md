@@ -13,31 +13,55 @@
 и целиком вся инфраструктура не заработала. Были запрошены паки и бандлы под `РЕД ОС 8.0`*
 
 Была созданы ВМ со следующими характеристиками:
-| Название экземпляра  | IPv4       | Flavor    | Disk   |        OS        | Назначение
-| -------------------- | ---------- | --------  | ------ |----------------- | --------------
-| dwh-adb-ent-tools    | 10.0.0.130 | STD3-1-2  | 100 GB | РЕД ОС 8.0 ФСТЭК | local reposutory & docker registry
-| dwh-adb-ent-services | 10.0.0.29 | STD3-8-16 | 100 GB | РЕД ОС 8.0 ФСТЭК | ADB Control, ADB Backup Manager
-| dwh-adb-master       | 10.0.0.251 | STD3-1-2  | 20 GB  | РЕД ОС 8.0 ФСТЭК | Master of Cluster
-| dwh-adb-standby      | 10.0.0.250 | STD3-1-2  | 20 GB  | РЕД ОС 8.0 ФСТЭК | Standby of Cluster
-| dwh-adb-segment1     | 10.0.0.73  | STD3-8-16 | 100 GB | РЕД ОС 8.0 ФСТЭК | First segment of Cluster
-| dwh-adb-segment2     | 10.0.0.249 | STD3-8-16 | 100 GB | РЕД ОС 8.0 ФСТЭК | Second segment of Cluster
+| Название экземпляра  | Open Ports |  Flavor   |  AZ  | Disk   |    Subnet    |        OS        | Назначение
+| -------------------- | ---------- | --------  | ---- | ------ | ------------ |----------------- | --------------
+| adb-cluster-manager  | 22,80      | STD3-2-8  |  MS1 | 60 GB  |  10.0.0.0/24 | РЕД ОС 8.0 ФСТЭК | ADB Cluster Manager
+| dwh-adb-ent-tools    | 22,81      | STD3-1-2  |  MS1 | 100 GB |  10.0.0.0/24 | РЕД ОС 8.0 ФСТЭК | local reposutory & docker registry
+| dwh-adb-ent-services | 22,8890    | STD3-8-16 |  MS1 | 100 GB |  10.0.0.0/24 | РЕД ОС 8.0 ФСТЭК | ADB Control, ADB Backup Manager
+| dwh-adb-master       | 22,5432    | STD3-1-2  |  MS1 | 20 GB  |  10.0.0.0/24 | РЕД ОС 8.0 ФСТЭК | Master of Cluster
+| dwh-adb-standby      | 22         | STD3-1-2  |  ME1 | 20 GB  |  10.0.0.0/24 | РЕД ОС 8.0 ФСТЭК | Standby of Cluster
+| dwh-adb-segment1     | 22         | STD3-8-16 |  MS1 | 100 GB |  10.0.0.0/24 | РЕД ОС 8.0 ФСТЭК | First segment of Cluster
+| dwh-adb-segment2     | 22         | STD3-8-16 |  ME1 | 100 GB |  10.0.0.0/24 | РЕД ОС 8.0 ФСТЭК | Second segment of Cluster
 
 При создании ВМ был указан id_rsa ключ для дальнейшего подключения по `ssh`. Подключение по ssh будет производииться от основного юзера операционной системы, в данном случае `redos`.
 
 ### Шаг 1. Установка ADCM (Arenadata Cluster Manager)
-Установка ADCM выполняется по [документации](https://docs.arenadata.io/ru/ADB/current/introduction/intro.html). Наиболее удобный способ - установка в контейнерах докер. Этот репозиторий содержит `docker-compose.yml` с уже настроенным `adcm` и `postgres` для хранения данных. Для развертывания `adcm` просто склонируйте репозиторий и выполните команду `docker compose up -d`
+Для выполнения этого шага на ВМ `adb-cluster-manager` потребуется установить его зависимости:
+```bash
+sudo dnf update -y
+sudo dnf install -y \
+    git \
+    wget \
+    docker \
+    podman-compose
+
+```
+
+```bash
+# Создать файл nodocker
+sudo mkdir -p /etc/containers
+sudo touch /etc/containers/nodocker
+```
+
+```bash
+sudo mkdir -p /opt/pgdata
+
+```
+
+
+Установка ADCM выполняется по [документации](https://docs.arenadata.io/ru/ADB/current/introduction/intro.html). Наиболее удобный способ - установка в контейнерах докер. Этот репозиторий содержит `docker-compose.yml` с уже настроенным `adcm` и `postgres` для хранения данных. Для развертывания `adcm` просто склонируйте репозиторий и выполните команду `docker compose up -d`.
 
 ### Шаг 2. Вход и настройка adcm
-* Для запуска после установки воспользуйтесь [инструкцией](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#%D1%88%D0%B0%D0%B3-3-%D0%B7%D0%B0%D0%BF%D1%83%D1%81%D0%BA-adcm). В отличие от инструкции вместо 8000 используется порт: 80. 
+* Для запуска после установки воспользуйтесь [инструкцией](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#%D1%88%D0%B0%D0%B3-3-%D0%B7%D0%B0%D0%BF%D1%83%D1%81%D0%BA-adcm). В отличие от инструкции вместо 8000 используется порт: 80.
 * Для входа используйте логин: `admin` и пароль: `admin`. Далее смените пароль как описано в [тут](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#%D0%BF%D1%80%D0%BE%D0%B2%D0%B5%D1%80%D0%BA%D0%B0-web-%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81%D0%B0-adcm)
 * Вручную установите URL ADCM как описато в [инструкции](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#adcm-url)
 
 ### Шаг 3. Загрузить bundles
 *Важно! Перед выполнением этого шага вам надо запросить у команды `Arenadata` бандлы и паки для установки всех необходимых программных продуктов. Для этого отправьте им заявку с указанием точной версии операционной системы на которую вы будете устанавливать  `ADB` и все вспомогательный программы, а также саму версию `ADB` (рекомендуется к установке наиболее свежая на данный момент). В данной примере установка ведется на `РЕД ОС 8.0 ФСТЭК` версии `ADB 6.30.0.1`*
 
-* Для установки продуктов Arenadata нам постребуется 4 бандла: 
+* Для установки продуктов Arenadata нам постребуется 4 бандла:
 
-| Название бандла                    | Назначение |     
+| Название бандла                    | Назначение |
 | ---------------------------------- | ---------- |
 | SSH Hostprovider                   | Для подключения хостов (физических или виртуальных) в кластерам (и сервисам) по ssh
 | ADB Enterprise Tools               | Для `offline` установки потребуется локальный репозиторий для пакетного менеджера и docker registry для хранения образов. В этом бандле все что нужно для разворачивания кластера с этими сервисами. |
@@ -47,7 +71,8 @@
 Перейдите в ADCM на вкладку `Bundles` и добавьте все 4.
 
 ### Шаг 4. Подключить все хосты к ADB CM.
-Для этого в ADB Cluster Manager перейдите во вкладку вкладку `Hosts` и добавьте созданные на предыдущем Шаге 0 хосты ВМ. Для этого постребуется указаться имя юзера для подключения по ssh (в данном примере `redos`), ввести его секретный ключ ssh и указать IPv4 адрес в локальной сети, в данном примере 10.0.0.130.
+* Создать и настроить хостпровайдера по [инструкции](https://docs.arenadata.io/ru/hp-ssh/current/get-started/install.html#%D1%88%D0%B0%D0%B3-3-%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D1%85%D0%BE%D1%81%D1%82%D0%BF%D1%80%D0%BE%D0%B2%D0%B0%D0%B9%D0%B4%D0%B5%D1%80%D0%B0-%D0%BD%D0%B0-%D0%B1%D0%B0%D0%B7%D0%B5-%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B6%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE-%D0%B1%D0%B0%D0%BD%D0%B4%D0%BB%D0%B0). Про то что такое `hostprovider` и для чего он нужен можно прочитать [здесь](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/hostprovider/index.html)
+* Создать и настроить хосты (по одному) согласно [инструкции](https://docs.arenadata.io/ru/hp-ssh/current/how-to/create-hosts.html). Потребуется заполнить имя пользователя (в данном примере `redos`), ipv4 адрес и приватный ключ для SSH подключения. После настройки рекомендуется проверить подключение запустив джобу `Check connection` и установить `Statuschecker` запустив `Install statuschecker`
 
 Для удобства предлагаю имена хостов в VK Cloud и имена хостов в ADB CM указывать одинаковые во избежании случайных ошибок: 
 
