@@ -1,5 +1,6 @@
 volumes:
   pgdata:
+  adcm:
 
 networks:
   arenadata:
@@ -9,9 +10,9 @@ services:
   adcm:
     image: "hub.arenadata.io/adcm/adcm:2.12.0"
     ports:
-      - "80:8000"
+      - "8000:8000"
     volumes:
-      - "/opt/adcm:/adcm/data"
+      - adcm:/adcm/data
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -19,12 +20,14 @@ services:
       - DB_NAME=postgres
       - DB_PASS=Ws3iysiw
       - LOG_LEVEL=INFO
+    container_name: adcm
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
         restart: true
     networks:
-      arenadata: { aliases: [ adcm ] }
+      arenadata:
 
   postgres:
     image: "postgres:16.14"
@@ -33,6 +36,8 @@ services:
       PGDATA: /var/lib/postgresql/data/16
     volumes:
       - pgdata:/var/lib/postgresql/data/16
+    container_name: postgres
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
@@ -40,4 +45,4 @@ services:
       start_period: 30s
       timeout: 10s
     networks:
-      arenadata: { aliases: [ postgres ] }
+      arenadata:
