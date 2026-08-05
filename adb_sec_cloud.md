@@ -44,12 +44,15 @@ java -version
 
 ### Шаг 4. Настроить и запустить прокси-сервер на локальной машине
 ```bash
+# Создать каталог и запустить в нем виртуальное окружение
 mkdir proxy_server
 cd proxy_server
 python3 -m env venv
 source env/bin/activate
-python3 -m pip install proxy.py
-python3 -m proxy --port 8080
+
+# Запустить прокси сервер на порту 8080
+(env) ~# python3 -m pip install proxy.py
+(env) ~# python3 -m proxy --port 8080
 ```
 
 ### Шаг 5. Установить Arenadata Cluster Manager
@@ -117,13 +120,13 @@ sudo docker run -d \
 ### Шаг 6. Вход и настройка adcm
 * Для запуска после установки воспользуйтесь [инструкцией](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#%D1%88%D0%B0%D0%B3-3-%D0%B7%D0%B0%D0%BF%D1%83%D1%81%D0%BA-adcm).
 * Для входа используйте логин: `admin` и пароль: `admin`. Далее смените пароль как описано в [тут](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#%D0%BF%D1%80%D0%BE%D0%B2%D0%B5%D1%80%D0%BA%D0%B0-web-%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81%D0%B0-adcm)
-* Вручную установите URL ADCM как описато в [инструкции](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#adcm-url)
+* Вручную установите URL ADCM как описано в [инструкции](https://docs.arenadata.io/ru/ADB/current/get-started/online-install/adcm-install.html#adcm-url)
 
 ### Шаг 7. Загрузить bundles
 *Важно! Перед выполнением этого шага вам надо запросить у команды `Arenadata` бандлы и паки для установки всех необходимых программных продуктов. Для этого отправьте им заявку с указанием точной версии операционной системы на которую вы будете устанавливать  `ADB` и все вспомогательный программы, а также саму версию `ADB` (рекомендуется к установке наиболее свежая на данный момент). В данной примере установка ведется на `Red Os 8.0c Сертифицированная` версии `ADB 6.30.0.1`*
 
 
-* Для установки продуктов Arenadata нам постребуется 4 бандла:
+* Для установки продуктов Arenadata нам потребуется 4 бандла:
 
 | Название бандла                    | Название файла (может отличаться) | Назначение |
 | ---------------------------------- | --------------------------------- | ---------- |
@@ -238,5 +241,110 @@ ssh -R 8080:127.0.0.1:8080 redos@10.0.0.13
 * Также система постребует указать необходимые параметры (пароли) для создаваемых служебных юзеров в сервисах
 * После завершения выполните сначала `Precheck`, а затем `Install`
 
-### Шаг 11. Установка и настройка ADB 
-Подготовка: смена cgroup
+### Шаг 12. Установка и настройка ADB 
+* Создайте кластер `ADB` из одноименного бандла
+* Добавьте сервисы:
+    - ADB
+    - ADBM Agent
+    - ADBC Agent
+* Смаппите сервисы на соответствующие хосты в разделе `Mapping`
+* Сначала выполните `Precheck`
+* Затем запустите `Install`
+
+Для развертывания `ADB` используйте следущие хосты:
+
+| Название экземпляра в VK Cloud  | Название хоста в ADB CM |     
+| ------------------------------- | ----------------------- |
+| dwh-adb-master                  | dwh-adb-master          |
+| dwh-adb-standby                 | dwh-adb-standby         |
+| dwh-adb-segment1                | dwh-adb-segment1        |
+| dwh-adb-segment2                | dwh-adb-segment2        |
+
+Перед тем как запускать установку или `Precheck` убедитесь что на хостах:
+* установлен параметр proxy для пакетного менеджера `dnf`
+* установлена `Java 17` как версия по-умолчанию
+* На всех хостах установлен `Statuchecker`
+
+Помимо этого требуется переключить OS на использование cgroup v1 - `tmpfs`, вместо cgroup v2 - `cgroup2fs` (по-умолчанию). Для этого на каждом хосте выполните команды:
+```bash
+sudo -i
+grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0 systemd.legacy_systemd_cgroup_controller=1"
+reboot
+
+# Проверить версию cgroup
+stat -fc %T /sys/fs/cgroup/
+
+# Должно вернуться
+tmpfs
+```
+
+Перед запуском `Precheck` и `Install` откройте ssh сессю и прокиньте порты для доустановки необходимых зависимостей:
+```bash
+ssh -R 8080:127.0.0.1:8080 redos@10.0.0.14
+```
+
+Proxy-server на локальной машине также должен быть запущен:
+```bash
+cd ~/Documents/proxy_server
+source env/bin/activate
+python3 -m proxy --port 8080
+```
+
+# Troubleshooting
+
+### Fatal: Unable to start service cgconfig_fix: Job for cgconfig_fix.service failed because the control process exited with error code.
+При установке кластера `ADB` может возникнуть такая ошибка:
+```bash
+TASK [adb_cgconfig : Enabling cgconfig_fix service] ****************************
+Thursday 30 July 2026  20:22:52 +0000 (0:00:01.510)       0:05:14.987 ********* 
+fatal: [dwh-adb-master]: FAILED! => changed=false 
+  msg: |-
+    Unable to start service cgconfig_fix: Job for cgconfig_fix.service failed because the control process exited with error code.
+    See "systemctl status cgconfig_fix.service" and "journalctl -xeu cgconfig_fix.service" for details.
+fatal: [dwh-adb-segment2]: FAILED! => changed=false 
+  msg: |-
+    Unable to start service cgconfig_fix: Job for cgconfig_fix.service failed because the control process exited with error code.
+    See "systemctl status cgconfig_fix.service" and "journalctl -xeu cgconfig_fix.service" for details.
+fatal: [dwh-adb-segment1]: FAILED! => changed=false 
+  msg: |-
+    Unable to start service cgconfig_fix: Job for cgconfig_fix.service failed because the control process exited with error code.
+    See "systemctl status cgconfig_fix.service" and "journalctl -xeu cgconfig_fix.service" for details.
+fatal: [dwh-adb-standby]: FAILED! => changed=false 
+  msg: |-
+    Unable to start service cgconfig_fix: Job for cgconfig_fix.service failed because the control process exited with error code.
+    See "systemctl status cgconfig_fix.service" and "journalctl -xeu cgconfig_fix.service" for details.
+```
+Ошибка может возникнуть не на всех хостах, а на некоторых из них.
+В случае возникновения убедитесь что на хостах где возникла ошибка установлены верные `cgroup`, выполните следующую команду:
+
+```bash
+# Проверить версию cgroup
+stat -fc %T /sys/fs/cgroup/
+
+# Должно вернуться
+tmpfs
+```
+
+Если `cgroup` везде установлены верно то проверьте версию ядра Linux:
+```bash
+uname -r
+```
+
+В моем примере ошибка была именно в версии ядра. По каким-то причинам обновление ядра произошло не на всех хостах синхронно, на проблемных хостах оставалась старая версия ядра `6.12.56-1.red80.x86_64`, а на хостах где не было ошибок при установке версия была `6.12.92-1.red80.x86_64`. По этой причине не была нормально смонтирована файловая система для `cpuset` и не могла запуститься служба `cgconfig_fix.service`.
+
+Обновление ядра исправило ошибку.
+
+### Error: psql - command not found
+После установки кластера `ADB` на хосте `dwh-adb-master` нет клиентской утилиты `psql`.
+На самом деле она была но не по стандартному пути и отсутствовала в переменной `PATH`.
+Чтобы найти утилиту выполните команду:
+
+```bash
+sudo find / -name psql 2>/dev/null
+
+# Предполагаемый вывод
+/usr/share/bash-completion/completions/psql
+/usr/lib/gpdb/bin/psql
+
+# Добавьте путь /usr/lib/gpdb/bin в переменную PATH
+```
